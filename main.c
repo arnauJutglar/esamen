@@ -31,8 +31,14 @@ void alliberar(cmplx *);
 int main(void) {
     FILE *fp;
     char nomf[10];
-    cmplx *v;
-    int i;
+    cmplx *v, **arrels, *primer;
+    cmplx aux, w0;
+    int i, j, k, d;
+    double a, b;
+    
+    w0.x = 0.1234;
+    w0.y = 0.5678;
+    
     
     printf("Entra nom arxiu.\n");
     scanf("%s", nomf);
@@ -50,12 +56,70 @@ int main(void) {
         exit(1);
     }
     
+    /* La llista de nodes */
     v = (cmplx *) malloc(sizeof(cmplx));
+    primer = (cmplx *) malloc(sizeof(cmplx));
+    primer->seg = NULL;
     
     /* Llegim */
-    i=1;
-    while (fscanf(fp, "%lf %lf %d", &v[i-1].x, &v[i-1].y, &v[i-1].index) != EOF) {
-        v = realloc(v, i+1);
+    i=0;
+    while (fscanf(fp, "%lf %lf %d", &a, &b, &d) != EOF) {
+        if ((sqrt(a*a + b*b) >= 1e-8) && (d >= 1)) {
+            v = (cmplx *) realloc(v, i+1);
+            
+            
+            
+            aux.x = a;
+            aux.y = b;
+            polar(&aux);        // Obtenim les polars
+            
+            v[i] = aux;
+            
+            primer = afegir(primer, &v[i]);
+
+            
+            if (d == 1) {
+                v = (cmplx *) realloc(v, i+3);
+                aux = prod(v[i], w0);
+                
+                v[i+1] = aux;
+                primer = afegir(primer, &v[i+1]);
+                
+                quocient(v[i], w0, &v[i+2]);
+                primer = afegir(primer, &v[i+2]);
+                
+            } else if (d >= 2) {
+                /* Ara hem de fer un vector de vectors per les arrels amb dynamic */
+                arrels = (cmplx **) calloc(d, sizeof(cmplx *));
+                if (arrels == NULL) {
+                    printf("memory issues\n");
+                    exit(1);
+                }
+                for (j=0; j < d; j++) {
+                    arrels[j] = (cmplx *) malloc(sizeof(cmplx));
+                    if (arrels[i] == NULL) {
+                        printf("memory issues\n");
+                        exit(1);
+                    }
+                    
+                    arrels = nroot(v[i], d);
+                    
+                    for (k=0; k < d; k++) {
+                        v[i+k+1] = *arrels[k];
+                        primer = afegir(primer, &v[i+k+1]);
+                    }
+                    i += d + 1;
+                    
+                    
+                    /* Ara alliberar la memòria */
+                    for (j=0; j < d; j++) {
+                        free(arrels[j]);
+                    }
+                    
+                    free(arrels);
+                }
+            }
+        }
     }
     
     return 0;
